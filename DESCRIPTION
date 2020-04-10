@@ -1,0 +1,20 @@
+Package: esquery
+Title: Utilities for building Elasticsearch queries
+Version: 0.0.1
+Authors@R: 
+    person(given = "Ryan",
+           family = "Hafen",
+           role = c("aut", "cre"),
+           email = "rhafen@gmail.com",
+           comment = c(ORCID = "0000-0002-5516-8367"))
+Description: Provides utilities for building Elasticsearch queries in a simple and intuitive way.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+Imports: 
+    elastic,
+    magrittr,
+    jsonlite,
+    tibble
+RoxygenNote: 7.0.2
