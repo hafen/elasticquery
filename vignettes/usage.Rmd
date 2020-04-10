@@ -1,8 +1,8 @@
 ---
-title: "Buildin Queries"
+title: "Building Queries"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Buildin Queries}
+  %\VignetteIndexEntry{Building Queries}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
