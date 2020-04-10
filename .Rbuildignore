@@ -1,3 +1,6 @@
 ^LICENSE\.md$
 ^_ignore$
 ^\.travis\.yml$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

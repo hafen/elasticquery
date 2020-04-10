@@ -1,0 +1,264 @@
+---
+title: "Buildin Queries"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Buildin Queries}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Setup
+
+The first thing to do is to establish a connection with the Elasticsearch server. In our case, it is running locally on port 9200.
+
+```{r setup}
+library(elasticquery)
+
+con <- es_connect(
+  host = "127.0.0.1", port = 9200,
+  primary_index = "eios-items")
+```
+
+This connection object is passed to queries so it knows where to go to run the query.
+
+Note that we can also specify the `primary_index`, which is the index used by default by queries we build unless we specify otherwise in the query. Here we are querying "eios-items" by default.
+
+# Queries
+
+Two major types of queries are currently supported by this package.
+
+1. **Aggregation**: Documents are counted by specified fields in the data
+2. **Fetch**: Documents are retrieved according to specified criteria
+
+## Aggregation Queries
+
+Aggregation queries are constructed by
+
+- Initiate an aggregation query using `query_agg()`
+- Build on this query by specifying combinations of:
+  - Fields to aggregate on using `agg_by_field()`
+  - Date binning using `agg_by_date()`
+
+### Initiating a Query
+
+To initiate an aggregation query, we use the function `query_agg()`, and pass it our connection object.
+
+```{r}
+query <- query_agg(con)
+```
+
+We can view the query's translation to an Elasticsearch search body string simply through printing the query.
+
+```{r}
+query
+```
+
+Here, of course, the query is empty as we haven't specified aggregation dimensions yet.
+
+Queries can be executed using the `run()` function.
+
+```{r}
+run(query)
+```
+
+Since the query is empty, nothing is returned.
+
+### Getting a List of Queryable Fields
+
+To begin specifying fields to aggregate on, it can be helpful to get a view of what fields are available to aggregate on. This can be done by passing the connection object to `queryable_fields().
+
+```{r}
+queryable_fields(con)
+```
+
+### Aggregating by Fields
+
+Suppose we want to tabulate the frequency of all of the fields in the index. We can do this by adding `agg_by_field()` to our query, specifying the field name "tags".
+
+```{r}
+query <- query_agg(con) %>%
+  agg_by_field("tags")
+```
+
+The function `agg_by_field()`, and all subsequent query modifying functions take a query object as its input and emit a modified query object as its output. This makes these functions suitable for piping, which is a convenient and expressive way to build queries.
+
+To see what this new query looks like:
+
+```{r}
+query
+```
+
+**Note** that aggregation queries use [composite aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html) with paging, and running the query will automatically take care of recurrent queries until paging is done and bind the results together, saving a lot of tedious work.
+
+We can retrieve the result of this query by calling `run()`.
+
+```{r}
+run(query)
+```
+
+We can continue to add more dimensions to the aggregation using pipes. For example, to count the frequency of both the fields "tags" and "affectedCountriesIso":
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_field("affectedCountriesIso") %>%
+  run()
+```
+
+### Aggregating by Date Binning
+
+Suppose we want to get daily counts for each tag in the data. We can use a function `agg_by_date()`, which by default aggregates daily.
+
+Here, we aggregate on a document's field "processedOnDate".
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate") %>%
+  run()
+```
+
+For finer control over the date binning, we can use functions `calendar_interval()` and `fixed_interval()`.
+
+For example, to bin on calendar week:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate", calendar_interval("1w")) %>%
+  run()
+```
+
+And to bin on every 10 days:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate", fixed_interval("10d")) %>%
+  run()
+```
+
+### Filtering
+
+We can further modify an aggregation query by specifying filters. Three types of filters are currently available:
+
+- Range filters: specify a range of values a field can have
+- Terms filters: specify a value or vector of values a field must take
+- Match filters: match a specified string in a field
+
+**Note** that filters can apply to both aggregation and fetch queries.
+
+#### Range Filters
+
+Range filters are specifyind using `filter_range()`, specifying the field to filter, and then specifying one or both of `from` and `to` values for the range.
+
+For example, to take our earlier aggregation query and filter it to dates later than 2018-01-01:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate", calendar_interval("1w")) %>%
+  filter_range("processedOnDate", from = "2018-01-01") %>%
+  run()
+```
+
+#### Terms Filters
+
+The funtion `filter_terms()` adds a filter to a query that specifies certain values a field must have to be included in the aggregation.
+
+For example, to add to our earlier query, suppose we require that "affectedCountriesIso" must contain "US" or "CA":
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate", calendar_interval("1w")) %>%
+  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  run()
+```
+
+#### Match Filters
+
+The function `filter_match()` specifies a filter to only include documents where the specified field contains a match for the provided string.
+
+For example, to further refine our aggregation to only include documents where a match for the string "disease" is found in the full text:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate", calendar_interval("1w")) %>%
+  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  filter_match("fullText", "disease") %>%
+  run()
+```
+
+## Fetch Queries
+
+Fetch queries simply retrieve documents based on filtering criteria. All of the filtering functions specified above apply to these queries.
+
+### Initiating a Query
+
+Similar to aggregation queries, a fetch query is initialized using `query_fetch()`, which takes as its primary argument the connection object.
+
+One optional argument of note to this function is `path`, which specifies a directory to write docuents to as they are fetched. If this is not specified, results will be read into memory. If the result set looks like it will be very large, a warning is provided that encourages the user to provide a `path` and write to disk.
+
+If we intialize a fetch query with no refinements, it will returl all documents in the index.
+
+For example, with our example index which contains 10k documents:
+
+```r
+docs <- query_fetch(con) %>%
+  run()
+```
+
+This will fetch all 10k documents and return them as a large list to `docs`.
+
+**Note** that fetch queries automatically take care of [scrolling](https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/scroll_examples.html) to retrieve potentially very large sets of documents. The scroll limit is 10k documents, so iterative queries are run to fetch these in batches and piece them together upon retrieval.
+
+### Adding Filters to Fetch Queries
+
+It is probably more desirable for a fetch query to pinpoint records of interest rather than retrieve all documents. This can be done using filter queries as we specified earlier.
+
+For example, to fetch all documents matching the filtering criteria we specified in the final aggregation example:
+
+```{r}
+docs <- query_fetch(con) %>%
+  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  filter_match("fullText", "disease") %>%
+  run()
+```
+
+### Fetching to Disk
+
+In the previous fetch examples, the return object `docs` has been a list format of the document content of the query.
+
+In a many cases we may wish to do a bulk download of many articles. If we specify a `path` argument to `query_fetch()`, the results will be written in batches to the specified directory.
+
+For example, to write our last query to disk, we specify a directory in our query initizilaztion. Also, note that to simulate scrolling, we specify each iteration of the query to retrieve 10 documents (instead of the default 10k documents). With this, we see that two files get written, one for each scroll.
+
+```{r}
+tf <- tempfile()
+dir.create(tf)
+docs <- query_fetch(con, path = tf, size = 10) %>%
+  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  filter_match("fullText", "disease") %>%
+  run()
+
+list.files(docs)
+```
+
+# Limitations
+
+This package is experimental and has not undergone rigorous testing to verify the correctness of the constructed queries. Use at your own risk.
+
+The package has been written to cover a large number of immediate use cases. However, there are many additional feature and parameters of Elasticsearch that could be exposed through this interface.

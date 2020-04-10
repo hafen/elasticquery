@@ -54,6 +54,7 @@ filter_match <- function(query, field, match) {
 #' @param field field name (see [queryable_fields()] for all possibilities)
 #' @param terms a string or vector of strings to exact match
 #' @importFrom jsonlite toJSON
+#' @export
 filter_terms <- function(query, field, terms) {
   check_class(query, c("query_agg", "query_fetch"), "filter_terms")
 

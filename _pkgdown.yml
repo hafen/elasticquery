@@ -1,0 +1,17 @@
+destination: docs
+navbar:
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Usage"
+      href: articles/usage.html
+    - text: "Reference"
+      href: reference/index.html
+  right:
+   - icon: fa-github
+     href: https://github.com/hafen/elasticquery
+
+# reference:
+
+#   - title: "Connection"
+#     contents:
