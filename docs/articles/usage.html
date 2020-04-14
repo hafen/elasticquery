@@ -102,7 +102,7 @@
 <div id="aggregation-queries" class="section level2">
 <h2 class="hasAnchor">
 <a href="#aggregation-queries" class="anchor"></a>Aggregation Queries</h2>
-<p>Aggregation queries are constructed by</p>
+<p>Aggregation queries are constructed by doing the following:</p>
 <ul>
 <li>Initiate an aggregation query using <code><a href="https://rdrr.io/pkg/elasticquery/man/query_agg.html">query_agg()</a></code>
 </li>
@@ -148,6 +148,7 @@
 <a class="sourceLine" id="cb5-13" data-line-number="13"><span class="co">#&gt;  9 fullText             text   </span></a>
 <a class="sourceLine" id="cb5-14" data-line-number="14"><span class="co">#&gt; 10 id                   integer</span></a>
 <a class="sourceLine" id="cb5-15" data-line-number="15"><span class="co">#&gt; # … with 27 more rows</span></a></code></pre></div>
+<p>Note that aggregations make most sense when done against categorical variables with some bounded cardinality. Typically keywords make the most sense to aggregate against, but even with keywords, you should use care to think about what fields make sense to aggregate.</p>
 </div>
 <div id="aggregating-by-fields" class="section level3">
 <h3 class="hasAnchor">
@@ -422,7 +423,7 @@
 <h1 class="hasAnchor">
 <a href="#limitations" class="anchor"></a>Limitations</h1>
 <p>This package is experimental and has not undergone rigorous testing to verify the correctness of the constructed queries. Use at your own risk.</p>
-<p>The package has been written to cover a large number of immediate use cases. However, there are many additional feature and parameters of Elasticsearch that could be exposed through this interface.</p>
+<p>The package has been written to cover a large number of immediate use cases. However, there are many additional features and parameters of Elasticsearch that could be exposed through this interface in the future.</p>
 </div>
   </div>
 

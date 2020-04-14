@@ -39,7 +39,7 @@ Two major types of queries are currently supported by this package.
 
 ## Aggregation Queries
 
-Aggregation queries are constructed by
+Aggregation queries are constructed by doing the following:
 
 - Initiate an aggregation query using `query_agg()`
 - Build on this query by specifying combinations of:
@@ -77,6 +77,8 @@ To begin specifying fields to aggregate on, it can be helpful to get a view of w
 ```{r}
 queryable_fields(con)
 ```
+
+Note that aggregations make most sense when done against categorical variables with some bounded cardinality. Typically keywords make the most sense to aggregate against, but even with keywords, you should use care to think about what fields make sense to aggregate.
 
 ### Aggregating by Fields
 
@@ -261,4 +263,4 @@ list.files(docs)
 
 This package is experimental and has not undergone rigorous testing to verify the correctness of the constructed queries. Use at your own risk.
 
-The package has been written to cover a large number of immediate use cases. However, there are many additional feature and parameters of Elasticsearch that could be exposed through this interface.
+The package has been written to cover a large number of immediate use cases. However, there are many additional features and parameters of Elasticsearch that could be exposed through this interface in the future.
