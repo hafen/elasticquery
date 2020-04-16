@@ -48,6 +48,23 @@ filter_match <- function(query, field, match) {
 }
 # { "match": { "fullText": "and" }},
 
+#' Specify a regexp filter
+#'
+#' @param query a [query_agg()] or [query_fetch()] object
+#' @param field field name (see [queryable_fields()] for all possibilities)
+#' @param regexp a regular expression string to match
+#' @export
+filter_regexp <- function(query, field, regexp) {
+  check_class(query, c("query_agg", "query_fetch"), "filter_match")
+  res <- list(
+    regexp = list()
+  )
+  res$regexp[[field]] <- regexp
+
+  query$filters <- c(query$filters, list(res))
+  query
+}
+
 #' Specify a terms filter
 #'
 #' @param query a [query_agg()] or [query_fetch()] object
