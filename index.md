@@ -12,7 +12,7 @@ The elasticquery package provides utilities for building Elasticsearch queries i
 You can install the package from Github with:
 
 ```r
-# install.packages("remots)
+# install.packages("remotes")
 remotes::install_github("hafen/elasticquery")
 ```
 
