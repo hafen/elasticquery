@@ -23,7 +23,7 @@ library(elasticquery)
 
 con <- es_connect(
   host = "127.0.0.1", port = 9200,
-  primary_index = "eios-items")
+  primary_index = "eios-items_all")
 ```
 
 This connection object is passed to queries so it knows where to go to run the query.
@@ -32,10 +32,23 @@ Note that we can also specify the `primary_index`, which is the index used by de
 
 # Queries
 
+## Overview
+
 Two major types of queries are currently supported by this package.
 
-1. **Aggregation**: Documents are counted by specified fields in the data
-2. **Fetch**: Documents are retrieved according to specified criteria
+1. **Aggregation**: Documents are counted by specified fields in the data, query initiated with `query_agg()`
+2. **Fetch**: Documents are retrieved according to specified criteria, query initiated with `query_fetch()`
+
+After a query is initiated, it can built upon by piping various operations:
+
+- `agg_by_field()`: specify a field to aggregate by, only for aggregation queries
+- `agg_by_date()`: specify a date field and date binning to aggregate by, only for aggregation queries
+- `filter_match()`: specify a field to filter documents on according to a string match (partial for text fields, exact for keyword fields), for both aggregation and fetch queries
+- `filter_terms()`: specify a field to filter documents on according to a string exact match, for both aggregation and fetch queries
+- `filter_regexp()`: specify a field to filter documents on according to a regular expression match, for both aggregation and fetch queries
+- `filter_range()`: specify a field to filter documents on according to a specified range, for both aggregation and fetch queries
+- `select_fields()`: specify fields to select in the returned documents, only for fetch queries
+- `sort_docs()`: specify fields by which to sort the returned documents, only for fetch queries.
 
 ## Aggregation Queries
 
@@ -166,8 +179,18 @@ For example, to take our earlier aggregation query and filter it to dates later 
 ```{r}
 query_agg(con) %>%
   agg_by_field("tags") %>%
-  agg_by_date("processedOnDate", calendar_interval("1w")) %>%
-  filter_range("processedOnDate", from = "2018-01-01") %>%
+  agg_by_date("processedOnDate") %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  run()
+```
+
+To filter on a date/time, the format is like the following:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_date("processedOnDate") %>%
+  filter_range("processedOnDate", from = "2020-03-10T10:21:32") %>%
   run()
 ```
 
@@ -186,6 +209,21 @@ query_agg(con) %>%
   run()
 ```
 
+#### Regexp Filters
+
+The function `filter_regexp()` adds a filter to a query that provides a regular expression that a field must match to be included in the results. Note that unfortuately Elasticsearch regular expressions are case sensitive.
+
+To aggregate tags but only for documents that have a tag that contain "Corona", for example:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  filter_regexp("tags", ".*Corona.*") %>%
+  run()
+```
+
+Note that here we are filtering on a field that is an array of values for each document. Because of this, we will get more tags in our resulting aggregation than tags that include "Corona". Here, we are counting *all* tags that are present in each article that contains a tag matching "Corona".
+
 #### Match Filters
 
 The function `filter_match()` specifies a filter to only include documents where the specified field contains a match for the provided string.
@@ -196,7 +234,7 @@ For example, to further refine our aggregation to only include documents where a
 query_agg(con) %>%
   agg_by_field("tags") %>%
   agg_by_date("processedOnDate", calendar_interval("1w")) %>%
-  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
   filter_terms("affectedCountriesIso", c("US", "CA")) %>%
   filter_match("fullText", "disease") %>%
   run()
@@ -233,7 +271,19 @@ For example, to fetch all documents matching the filtering criteria we specified
 
 ```{r}
 docs <- query_fetch(con) %>%
-  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  filter_match("fullText", "disease") %>%
+  run()
+```
+
+### Fetching a subset of records
+
+There is an argument `max` in `query_fetch()` that can be used to specify that we just want to fetch the first `max` documents. This can be useful if we want to experiment with our query and the resulting data before doing a full fetch.
+
+```{r}
+docs <- query_fetch(con, max = 10) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
   filter_terms("affectedCountriesIso", c("US", "CA")) %>%
   filter_match("fullText", "disease") %>%
   run()
@@ -245,18 +295,56 @@ In the previous fetch examples, the return object `docs` has been a list format 
 
 In a many cases we may wish to do a bulk download of many articles. If we specify a `path` argument to `query_fetch()`, the results will be written in batches to the specified directory.
 
-For example, to write our last query to disk, we specify a directory in our query initizilaztion. Also, note that to simulate scrolling, we specify each iteration of the query to retrieve 10 documents (instead of the default 10k documents). With this, we see that two files get written, one for each scroll.
+For example, to write our last query to disk, we specify a directory in our query initizilaztion. Also, note that to simulate scrolling, we specify each iteration of the query to retrieve 10 documents (instead of the default 10k documents) with the `size` argument. With this, we see that two files get written, one for each scroll.
 
 ```{r}
 tf <- tempfile()
 dir.create(tf)
 docs <- query_fetch(con, path = tf, size = 10) %>%
-  filter_range("processedOnDate", from = "2018-01-01") %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
   filter_terms("affectedCountriesIso", c("US", "CA")) %>%
   filter_match("fullText", "disease") %>%
   run()
 
 list.files(docs)
+```
+
+### Specifying fields to return
+
+An operation available only for fetch queries, `select_fields()`, allows us to specify which fields should be returned for each document. This is useful of documents contain some fields that are very large and we don't want to include them in our results.
+
+To see what values are acceptable for a selectable field:
+
+```{r}
+selectable_fields(con)
+```
+
+For example, to return just the fields "source.countryIso" and "locations":
+
+```{r}
+docs <- query_fetch(con, size = 10, max = 25) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  select_fields(c("source.countryIso", "locations")) %>%
+  sort_docs("processedOnDate") %>%
+  run()
+
+str(docs[[1]]$`_source`, 2)
+```
+
+### Specifying fields to sort on
+
+Another operation available only for fetch queries is `sort_docs()`, which allows you to specify fields to sort by as part of the fetch.
+
+For example:
+
+```{r}
+docs <- query_fetch(con, size = 10, max = 25) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  select_fields(c("source.countryIso", "locations", "processedOnDate")) %>%
+  sort_docs("processedOnDate") %>%
+  run()
+
+sapply(docs, function(x) x$`_source`$processedOnDate)
 ```
 
 # Limitations

@@ -13,6 +13,7 @@ filter_range <- function(
   query, field, from = NULL, to = NULL
 ) {
   check_class(query, c("query_agg", "query_fetch"), "filter_range")
+  check_fields(query, field, "filter_range")
   # TODO: make sure variable is numeric or date
   # long, integer, short, byte, double, float, half_float, scaled_float
 
@@ -38,6 +39,7 @@ filter_range <- function(
 #' @export
 filter_match <- function(query, field, match) {
   check_class(query, c("query_agg", "query_fetch"), "filter_match")
+  check_fields(query, field, "filter_match")
   res <- list(
     match = list()
   )
@@ -56,6 +58,8 @@ filter_match <- function(query, field, match) {
 #' @export
 filter_regexp <- function(query, field, regexp) {
   check_class(query, c("query_agg", "query_fetch"), "filter_match")
+  check_fields(query, field, "filter_regexp")
+
   res <- list(
     regexp = list()
   )
@@ -74,6 +78,7 @@ filter_regexp <- function(query, field, regexp) {
 #' @export
 filter_terms <- function(query, field, terms) {
   check_class(query, c("query_agg", "query_fetch"), "filter_terms")
+  check_fields(query, field, "filter_terms")
 
   tm <- ifelse(length(terms) == 1, "term", "terms")
   res <- list()
@@ -83,6 +88,7 @@ filter_terms <- function(query, field, terms) {
   query$filters <- c(query$filters, list(res))
   query
 }
+
 # { "term":  { "languageCode": "en" }},
 # { "terms":  { "languageCode": ["en", "au"] }},
 

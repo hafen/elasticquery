@@ -4,7 +4,14 @@
 \alias{query_fetch}
 \title{Initialize an document fetch query}
 \usage{
-query_fetch(con, index = NULL, path = NULL, size = 10000, time_scroll = "5m")
+query_fetch(
+  con,
+  index = NULL,
+  path = NULL,
+  size = 10000,
+  time_scroll = "5m",
+  max = 0
+)
 }
 \arguments{
 \item{con}{an \code{\link[=es_connect]{es_connect()}} object}
@@ -16,6 +23,8 @@ query_fetch(con, index = NULL, path = NULL, size = 10000, time_scroll = "5m")
 \item{size}{the number of documents to fetch in each batch (max is 10000)}
 
 \item{time_scroll}{specify how long a consistent view of the index should be maintained for scrolled search, e.g. "1m"}
+
+\item{max}{maximum number of documents to fetch}
 }
 \description{
 Initialize an document fetch query

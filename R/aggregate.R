@@ -21,6 +21,7 @@ query_agg <- function(con, index = NULL, size = 1000) {
 #' @export
 agg_by_field <- function(query, field) {
   check_class(query, "query_agg", "agg_by_field")
+  check_fields(query, field, "agg_by_field")
   res <- list()
   res[[field]] <- list(
     terms = list(field = field)
@@ -39,6 +40,7 @@ agg_by_field <- function(query, field) {
 #' @export
 agg_by_date <- function(query, field, interval = calendar_interval("1d")) {
   check_class(query, "query_agg", "agg_by_date")
+  check_fields(query, field, "agg_by_date")
 
   res <- list()
   res[[field]] <- list(

@@ -37,10 +37,16 @@ es_connect <- function(
       nms <- paste0(prefix, ".", nms)
     data.frame(field = nms, type = unname(tmp), stringsAsFactors = FALSE)
   }
-  types <- rbind(
-    get_types(index$mappings$properties),
-    get_types(index$mappings$properties$source$properties, prefix = "source")
-  )
+  get_null_types <- function(x)
+    names(which(unlist(lapply(x, function(a) is.null(a$type)))))
+
+  types <- list(get_types(index$mappings$properties))
+  for (fld in get_null_types(index$mappings$properties)) {
+    types <- c(types, list(
+      get_types(index$mappings$properties[[fld]]$properties, prefix = fld)
+    ))
+  }
+  types <- do.call(rbind, types)
   # idx <- which(sapply(types, is.null))
 
   structure(list(

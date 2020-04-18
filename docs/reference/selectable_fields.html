@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Initialize an document fetch query — query_fetch • elasticquery</title>
+<title>Get list of all selectable fields — selectable_fields • elasticquery</title>
 
 
 <!-- jquery -->
@@ -35,8 +35,8 @@
 
 
 
-<meta property="og:title" content="Initialize an document fetch query — query_fetch" />
-<meta property="og:description" content="Initialize an document fetch query" />
+<meta property="og:title" content="Get list of all selectable fields — selectable_fields" />
+<meta property="og:description" content="Get list of all selectable fields" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -105,23 +105,16 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Initialize an document fetch query</h1>
+    <h1>Get list of all selectable fields</h1>
     
-    <div class="hidden name"><code>query_fetch.Rd</code></div>
+    <div class="hidden name"><code>selectable_fields.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Initialize an document fetch query</p>
+    <p>Get list of all selectable fields</p>
     </div>
 
-    <pre class="usage"><span class='fu'>query_fetch</span>(
-  <span class='no'>con</span>,
-  <span class='kw'>index</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>path</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>size</span> <span class='kw'>=</span> <span class='fl'>10000</span>,
-  <span class='kw'>time_scroll</span> <span class='kw'>=</span> <span class='st'>"5m"</span>,
-  <span class='kw'>max</span> <span class='kw'>=</span> <span class='fl'>0</span>
-)</pre>
+    <pre class="usage"><span class='fu'>selectable_fields</span>(<span class='no'>con</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -129,26 +122,6 @@
     <tr>
       <th>con</th>
       <td><p>an <code><a href='es_connect.html'>es_connect()</a></code> object</p></td>
-    </tr>
-    <tr>
-      <th>index</th>
-      <td><p>the name of the index to query (if not specified, will fall back on 'primary_index' provided to <code><a href='es_connect.html'>es_connect()</a></code>)</p></td>
-    </tr>
-    <tr>
-      <th>path</th>
-      <td><p>an optional directory to write docuents to as they are fetched</p></td>
-    </tr>
-    <tr>
-      <th>size</th>
-      <td><p>the number of documents to fetch in each batch (max is 10000)</p></td>
-    </tr>
-    <tr>
-      <th>time_scroll</th>
-      <td><p>specify how long a consistent view of the index should be maintained for scrolled search, e.g. "1m"</p></td>
-    </tr>
-    <tr>
-      <th>max</th>
-      <td><p>maximum number of documents to fetch</p></td>
     </tr>
     </table>
 

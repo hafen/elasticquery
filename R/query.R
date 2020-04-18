@@ -44,6 +44,8 @@ get_query_fetch <- function(query) {
   res <- list(
     size = query$size
   )
+  res[["_source"]] <- query$select
+  res$sort <- query$sort
 
   if (length(query$filters) != 0)
     res$query <- get_filter_list(query)
@@ -130,7 +132,15 @@ run_query_fetch <- function(query) {
   r <- elastic::Search(query$con$con, index = query$index, time_scroll = query$time_scroll, body = qry)
 
   tot_hits <- cur_hits <- r$hits$total$value
-  message("Fetching ", tot_hits, " total documents...")
+  if (tot_hits == 0) {
+    message("No documents found...")
+    return(list())
+  }
+
+  tot_hits_str <- tot_hits
+  if (query$max > 0)
+    tot_hits_str <- paste0("first ", query$max, " of ", tot_hits)
+  message("Fetching ", tot_hits_str, " total documents...")
   if (tot_hits > 10000 && is.null(query$path))
     message("This is a large query. Beginning to fetch to memory, but consider aborting and using the 'path' argument with query_fetch() to the write results to disk.")
 
@@ -142,10 +152,18 @@ run_query_fetch <- function(query) {
       path = sprintf("%s/out%04d.json", query$path, counter),
       auto_unbox = TRUE, null = "null")
   }
-  message(min(query$size, length(out)), " documents fetched (",
-        round(100 * cum_hits / tot_hits), "%)...")
+  sz_str <- min(query$size, length(out))
+  denom <- tot_hits
+  cum_str <- cum_hits
+  if (query$max > 0) {
+    sz_str <- min(sz_str, query$max)
+    denom <- min(query$max, tot_hits)
+    cum_str <- min(cum_hits, query$max)
+  }
+  message(sz_str, " documents fetched (",
+        round(100 * cum_str / denom), "%)...")
 
-  while (cur_hits != 0) {
+  while (cur_hits != 0 && (query$max <= 0 || (query$max > 0 && cum_hits < query$max))) {
     counter <- counter + 1
     r <- elastic::scroll(query$con$con, r$`_scroll_id`, time_scroll = query$time_scroll)
     cur_hits <- length(r$hits$hits)
@@ -158,12 +176,21 @@ run_query_fetch <- function(query) {
           out <- c(out, r$hits$hits)
       }
       cum_hits <- cum_hits + length(r$hits$hits)
+      denom <- tot_hits
+      cum_str <- cum_hits
+      if (query$max > 0) {
+        cum_hits <- min(cum_hits, query$max)
+        denom <- min(query$max, tot_hits)
+        cum_str <- min(cum_hits, query$max)
+      }
       message(cum_hits, " documents fetched (",
-        round(100 * cum_hits / tot_hits), "%)...")
+        round(100 * cum_str / denom), "%)...")
     }
   }
   elastic::scroll_clear(query$con$con, r$`_scroll_id`)
   if (!is.null(query$path))
     return(query$path)
+  if (query$max > 0)
+    return(out[1:query$max])
   out
 }
