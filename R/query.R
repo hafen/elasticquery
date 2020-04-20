@@ -169,7 +169,7 @@ run_query_fetch <- function(query) {
     cur_hits <- length(r$hits$hits)
     if (cur_hits > 0) {
       if (!is.null(query$path)) {
-        jsonlite::write_json(out,
+        jsonlite::write_json(r$hits$hits,
           path = sprintf("%s/out%04d.json", query$path, counter),
           auto_unbox = TRUE, null = "null")
       } else {
