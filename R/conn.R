@@ -32,6 +32,8 @@ es_connect <- function(
   get_types <- function(x, prefix = "") {
     types <- lapply(x, function(a) a$type)
     tmp <- unlist(types)
+    if (is.null(tmp))
+      return(data.frame(field = character(0), type = character(0)))
     nms <- names(tmp)
     if (prefix != "")
       nms <- paste0(prefix, ".", nms)

@@ -1,6 +1,6 @@
 Package: elasticquery
 Title: Utilities for building Elasticsearch queries
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person(given = "Ryan",
            family = "Hafen",
