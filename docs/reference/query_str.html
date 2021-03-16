@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Specify fields to return — select_fields • elasticquery</title>
+<title>Initialize a query with a specified query string — query_str • elasticquery</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Specify fields to return — select_fields" />
-<meta property="og:description" content="Specify fields to return" />
+<meta property="og:title" content="Initialize a query with a specified query string — query_str" />
+<meta property="og:description" content="Initialize a query with a specified query string" />
 
 
 
@@ -108,27 +108,60 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Specify fields to return</h1>
+    <h1>Initialize a query with a specified query string</h1>
     
-    <div class="hidden name"><code>select_fields.Rd</code></div>
+    <div class="hidden name"><code>query_str.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Specify fields to return</p>
+    <p>Initialize a query with a specified query string</p>
     </div>
 
-    <pre class="usage"><span class='fu'>select_fields</span><span class='op'>(</span><span class='va'>query</span>, <span class='va'>fields</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>query_str</span><span class='op'>(</span>
+  <span class='va'>con</span>,
+  index <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>str</span>,
+  path <span class='op'>=</span> <span class='cn'>NULL</span>,
+  time_scroll <span class='op'>=</span> <span class='st'>"5m"</span>,
+  max <span class='op'>=</span> <span class='fl'>0</span>,
+  type <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"unknown"</span>, <span class='st'>"fetch"</span>, <span class='st'>"agg"</span><span class='op'>)</span>,
+  format <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"list"</span>, <span class='st'>"json"</span><span class='op'>)</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>query</th>
-      <td><p>a <code><a href='query_fetch.html'>query_fetch()</a></code> object</p></td>
+      <th>con</th>
+      <td><p>an <code><a href='es_connect.html'>es_connect()</a></code> object</p></td>
     </tr>
     <tr>
-      <th>fields</th>
-      <td><p>field name or vector of field names (see <code><a href='selectable_fields.html'>selectable_fields()</a></code> for all possibilities)</p></td>
+      <th>index</th>
+      <td><p>the name of the index to query (if not specified, will fall back on 'primary_index' provided to <code><a href='es_connect.html'>es_connect()</a></code>)</p></td>
+    </tr>
+    <tr>
+      <th>str</th>
+      <td><p>query string</p></td>
+    </tr>
+    <tr>
+      <th>path</th>
+      <td><p>an optional directory to write documents to as they are fetched</p></td>
+    </tr>
+    <tr>
+      <th>time_scroll</th>
+      <td><p>specify how long a consistent view of the index should be maintained for scrolled search, e.g. "1m"</p></td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td><p>maximum number of documents to fetch</p></td>
+    </tr>
+    <tr>
+      <th>type</th>
+      <td><p>the type of query defined in the string - one of "unknown", "fetch", or "agg"</p></td>
+    </tr>
+    <tr>
+      <th>format</th>
+      <td><p>format of returned output - either "list" or "json"</p></td>
     </tr>
     </table>
 

@@ -1,10 +1,65 @@
+#' Initialize a query with a specified query string
+#'
+#' @param con an [es_connect()] object
+#' @param index the name of the index to query (if not specified, will fall back on 'primary_index' provided to [es_connect()])
+#' @param str query string
+#' @param path an optional directory to write documents to as they are fetched
+#' @param time_scroll specify how long a consistent view of the index should be maintained for scrolled search, e.g. "1m"
+#' @param max maximum number of documents to fetch
+#' @param type the type of query defined in the string - one of "unknown", "fetch", or "agg"
+#' @param format format of returned output - either "list" or "json"
+#' @export
+query_str <- function(
+  con, index = NULL, str, path = NULL, time_scroll = "5m", max = 0,
+  type = c("unknown", "fetch", "agg"), format = c("list", "json")
+) {
+  format <- match.arg(format)
+  con$raw <- format == "json"
+
+  type <- match.arg(type)
+
+  if (is.null(path) && format == "file")
+    stop("Must specify a path if format='file'", call. = FALSE)
+
+  if (!is.null(path)) {
+    if (!dir.exists(path))
+      stop("Path '", path, "' must exist and be a directory",
+        call. = FALSE)
+
+    if (length(list.files(path)) > 0)
+      message("Note: files already exist in directory '", path, "'")
+  }
+
+  structure(list(
+    con = con,
+    index = get_index(con, index),
+    str = str,
+    path = path,
+    time_scroll = time_scroll,
+    max = max,
+    format = format,
+    type = type
+  ), class = c("es_query", "query_str"))
+}
+
+#' @importFrom jsonlite fromJSON prettify toJSON
 get_query <- function(query, after = NULL) {
-  check_class(query, c("query_agg", "query_fetch"), "get_query")
+  check_class(query, c("query_agg", "query_fetch", "query_str"), "get_query")
 
   if (inherits(query, "query_agg")) {
     qry <- get_query_agg(query, after = after)
-  } else {
+  } else if (inherits(query, "query_fetch")) {
     qry <- get_query_fetch(query)
+  } else if (inherits(query, "query_str")) {
+    if (query$type == "agg") {
+      qry <- jsonlite::fromJSON(query$str, simplifyVector = FALSE)
+      if (!is.null(after))
+        qry$aggs$agg_results$composite$after <- after
+    } else {
+      return(jsonlite::prettify(query$str))
+    }
+  } else {
+    stop("Not a valid query type")
   }
 
   jsonlite::toJSON(qry, auto_unbox = TRUE, null = "null", pretty = TRUE)
@@ -66,12 +121,16 @@ get_filter_list <- function(query) {
 #' @param query a [query_agg()] or [query_fetch()] object
 #' @export
 run <- function(query) {
-  check_class(query, c("query_agg", "query_fetch"), "run")
+  check_class(query, c("query_agg", "query_fetch", "query_str"), "run")
 
   if (inherits(query, "query_agg")) {
     run_query_agg(query)
-  } else {
+  } else if (inherits(query, "query_fetch")) {
     run_query_fetch(query)
+  } else if (inherits(query, "query_str")) {
+    run_query_str(query)
+  } else {
+    stop("Not a valid query type")
   }
 }
 
@@ -126,10 +185,22 @@ run_query_agg <- function(query) {
   tibble::as_tibble(res)
 }
 
+run_query_str <- function(query) {
+  if (query$type == "agg") {
+    run_query_agg(query)
+  } else if (query$type == "fetch") {
+    run_query_fetch(query)
+  } else {
+    r <- elastic::Search(query$con$con, index = query$index,
+      body = query$str)
+  }
+}
+
 #' @importFrom elastic scroll scroll_clear
 run_query_fetch <- function(query) {
   qry <- get_query(query)
-  r <- elastic::Search(query$con$con, index = query$index, time_scroll = query$time_scroll, body = qry)
+  r <- elastic::Search(query$con$con, index = query$index,
+    time_scroll = query$time_scroll, body = qry)
 
   tot_hits <- cur_hits <- r$hits$total$value
   if (tot_hits == 0) {
@@ -163,9 +234,12 @@ run_query_fetch <- function(query) {
   message(sz_str, " documents fetched (",
         round(100 * cum_str / denom), "%)...")
 
-  while (cur_hits != 0 && (query$max <= 0 || (query$max > 0 && cum_hits < query$max))) {
+  while (cur_hits != 0 && (query$max <= 0 ||
+    (query$max > 0 && cum_hits < query$max))) {
+
     counter <- counter + 1
-    r <- elastic::scroll(query$con$con, r$`_scroll_id`, time_scroll = query$time_scroll)
+    r <- elastic::scroll(query$con$con, r$`_scroll_id`,
+      time_scroll = query$time_scroll)
     cur_hits <- length(r$hits$hits)
     if (cur_hits > 0) {
       if (!is.null(query$path)) {

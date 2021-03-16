@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 The first thing to do is to establish a connection with the Elasticsearch server. In our case, it is running locally on port 9200.
 
-```{r setup}
+```{r echo=FALSE}
 library(elasticquery)
 
 con <- es_connect(
@@ -26,9 +26,17 @@ con <- es_connect(
   primary_index = "eios-items_all")
 ```
 
+```{r setup, eval=FALSE}
+library(elasticquery)
+
+con <- es_connect(
+  host = "127.0.0.1", port = 9200,
+  primary_index = "my-index")
+```
+
 This connection object is passed to queries so it knows where to go to run the query.
 
-Note that we can also specify the `primary_index`, which is the index used by default by queries we build unless we specify otherwise in the query. Here we are querying "eios-items" by default.
+Note that we can also specify the `primary_index`, which is the index used by default by queries we build unless we specify otherwise in the query. Here we are querying "my-index" by default.
 
 # Queries
 
@@ -309,6 +317,22 @@ docs <- query_fetch(con, path = tf, size = 10) %>%
 list.files(docs)
 ```
 
+### Specifying fields to sort on
+
+Another operation available only for fetch queries is `sort_docs()`, which allows you to specify fields to sort by as part of the fetch.
+
+For example:
+
+```{r}
+docs <- query_fetch(con, size = 10, max = 25) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  sort_docs("processedOnDate") %>%
+  run()
+
+sapply(docs, function(x) x$`_source`$processedOnDate)
+```
+
+
 ### Specifying fields to return
 
 An operation available only for fetch queries, `select_fields()`, allows us to specify which fields should be returned for each document. This is useful of documents contain some fields that are very large and we don't want to include them in our results.
@@ -324,27 +348,134 @@ For example, to return just the fields "source.countryIso" and "locations":
 ```{r}
 docs <- query_fetch(con, size = 10, max = 25) %>%
   filter_range("processedOnDate", from = "2020-03-10") %>%
-  select_fields(c("source.countryIso", "locations")) %>%
-  sort_docs("processedOnDate") %>%
+  select_fields(c("source.id", "triggers", "locations")) %>%
   run()
 
 str(docs[[1]]$`_source`, 2)
+
+to_data_frame <- function(x) {
+  tmp <- lapply(x, function(a) a$`_source`)
+  tibble::as_data_frame()
+}
 ```
 
-### Specifying fields to sort on
+## Ad hoc Queries
 
-Another operation available only for fetch queries is `sort_docs()`, which allows you to specify fields to sort by as part of the fetch.
+The interface provided by `query_fetch()`, `query_agg()`, and the accompanying filter and sort functions is meant to enable clean and precise definition of Elasticsearch queries, hiding all the messy details of scrolling, aggregation bucketing, query JSON specification, execution, etc. There may be times when this interface does not quite provide enough flexibility. In this scenario, a function, `query_str()`, has been created that allows you to provide a string specifying an Elasticsearch query that gets executed.
 
-For example:
+For example, suppose we would like to fetch all documents retrieved after 2020-03-10. As we have seen before, we can do this with the following:
+
+```r
+docs <- query_fetch(con, size = 1000) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  run()
+```
+
+Suppose we want to run a query similar to this, but we need to modify the query a bit in a way that isn't available through the interface provided in this package. Let's first look at what the resulting query string is:
 
 ```{r}
-docs <- query_fetch(con, size = 10, max = 25) %>%
-  filter_range("processedOnDate", from = "2020-03-10") %>%
-  select_fields(c("source.countryIso", "locations", "processedOnDate")) %>%
-  sort_docs("processedOnDate") %>%
+query_fetch(con, size = 1000) %>%
+  filter_range("processedOnDate", from = "2020-03-10")
+```
+
+For illustration purposes, we will take this string and run it directly without modification. To run this query string, we can do the following:
+
+```{r}
+str <- '{
+  "size": 1000,
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "processedOnDate": {
+              "gte": "2020-03-10"
+            }
+          }
+        }
+      ]
+    }
+  }
+}'
+
+res <- query_str(con, str = str) %>%
+  run()
+```
+
+Here we simply specified to run the query specified by this string. The structure of the output looks like this:
+
+```{r}
+str(res, 2)
+```
+
+Note that this is the raw output provided by Elasticsearch and not the more convenient list output provided by `query_fetch()`. Also note that it only pulled 1000 documents when we know there are more results in this query. These limitations occur because `query_str()` does not know what kind of query specificaiton it is going to receive, and therefore does not know how to best process the output.
+
+To fully take advantage of the fetch and aggregation conveniences provided by this package, an additional `type` parameter is available to `query_str()` which by default is "unkown", but can also be set to "fetch" or "agg".
+
+With our current example, if we add `type = "fetch"` to our call to `query_str()`, the execution now knows to handle the query as a fetch query and will take care of scrolling, etc. to fetch all of the documents.
+
+```{r}
+res <- query_str(con, str = str, type = "fetch") %>%
   run()
 
-sapply(docs, function(x) x$`_source`$processedOnDate)
+length(res)
+```
+
+While this example wasn't very imaginative, suppose there is more complex filter logic you want to apply. A typical use case might be to use `query_fetch()` and associated filter/sort functions to get you started, modify the query string as needed, and pass that to `query_str()`. Note, however, that there is less protection in this scenario from errors in the query specification, so you can expect to see more error messages which will result in the need to debug your query string.
+
+Similarly, we can apply `query_str()` to aggregation-type queries. Let's take the following example:
+
+```{r}
+query_agg(con) %>%
+  agg_by_field("tags") %>%
+  agg_by_field("affectedCountriesIso")
+```
+
+We can run this same query using `query_str()` as follows:
+
+```{r}
+str <- '{
+  "size": 0,
+  "aggs": {
+    "agg_results": {
+      "composite": {
+        "size": 1000,
+        "sources": [
+          {
+            "tags": {
+              "terms": {
+                "field": "tags"
+              }
+            }
+          },
+          {
+            "affectedCountriesIso": {
+              "terms": {
+                "field": "affectedCountriesIso"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}'
+
+res <- query_str(con, str = str) %>%
+  run()
+
+str(res, 3)
+```
+
+As before, we see that `query_str()` is "dumb" in that it doesn't know we are doing an aggregation and doesn't know to do the smart iteration to fetch the rest of the aggregation buckets as well as putting the result into a data frame.
+
+To make `query_str()` "smart", we can add `type = "agg"`:
+
+```{r}
+res <- query_str(con, str = str, type = "agg") %>%
+  run()
+
+res
 ```
 
 # Limitations
