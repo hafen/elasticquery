@@ -3,14 +3,17 @@
 #' @param con an [es_connect()] object
 #' @param index the name of the index to query (if not specified, will fall back on 'primary_index' provided to [es_connect()])
 #' @param size (TODO)
+#' @param check_fields should field names be checked when the query is
+#' augmented?
 #' @export
-query_agg <- function(con, index = NULL, size = 1000) {
+query_agg <- function(con, index = NULL, size = 1000, check_fields = TRUE) {
   structure(list(
     con = con,
     index = get_index(con, index),
     size = size,
     aggs = list(),
-    filters = list()
+    filters = list(),
+    check_fields = check_fields
   ), class = c("es_query", "query_agg"))
 }
 
@@ -21,7 +24,8 @@ query_agg <- function(con, index = NULL, size = 1000) {
 #' @export
 agg_by_field <- function(query, field) {
   check_class(query, "query_agg", "agg_by_field")
-  check_fields(query, field, "agg_by_field")
+  if (query$check_fields)
+    check_fields(query, field, "agg_by_field")
   res <- list()
   res[[field]] <- list(
     terms = list(field = field)
@@ -40,7 +44,8 @@ agg_by_field <- function(query, field) {
 #' @export
 agg_by_date <- function(query, field, interval = calendar_interval("1d")) {
   check_class(query, "query_agg", "agg_by_date")
-  check_fields(query, field, "agg_by_date")
+  if (query$check_fields)
+    check_fields(query, field, "agg_by_date")
 
   res <- list()
   res[[field]] <- list(

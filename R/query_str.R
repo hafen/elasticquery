@@ -11,10 +11,13 @@
 #' @param type the type of query defined in the string - one of "unknown",
 #'   "fetch", or "agg"
 #' @param format format of returned output - either "list" or "json"
+#' @param check_fields should field names be checked when the query is
+#' augmented?
 #' @export
 query_str <- function(
   con, index = NULL, str, path = NULL, time_scroll = "5m", max = 0,
-  type = c("unknown", "fetch", "agg"), format = c("list", "json")
+  type = c("unknown", "fetch", "agg"), format = c("list", "json"),
+  check_fields = TRUE
 ) {
   format <- match.arg(format)
   con$raw <- format == "json"
@@ -41,6 +44,7 @@ query_str <- function(
     time_scroll = time_scroll,
     max = max,
     format = format,
-    type = type
+    type = type,
+    check_fields = check_fields
   ), class = c("es_query", "query_str"))
 }
