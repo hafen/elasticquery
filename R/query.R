@@ -18,7 +18,8 @@ get_query <- function(query, after = NULL) {
     stop("Not a valid query type")
   }
 
-  jsonlite::toJSON(qry, auto_unbox = TRUE, null = "null", pretty = TRUE)
+  jsonlite::toJSON(qry, auto_unbox = TRUE, null = "null", pretty = TRUE,
+    digits = NA)
 }
 
 #' @export
@@ -65,16 +66,12 @@ get_query_fetch <- function(query) {
 }
 
 get_filter_list <- function(query) {
-  list(
-    bool = list(
-      filter = query$filters
-    )
-  )
+  list(bool = query$filters)
 }
 
 #' Execute a query
 #'
-#' @param query a [query_agg()] or [query_fetch()] object
+#' @param query a [query_agg()], [query_fetch()], or [query_str()] object
 #' @export
 run <- function(query) {
   check_class(query, c("query_agg", "query_fetch", "query_str"), "run")
@@ -165,8 +162,14 @@ run_query_fetch <- function(query) {
   }
 
   tot_hits_str <- tot_hits
-  if (query$max > 0)
-    tot_hits_str <- paste0("first ", query$max, " of ", tot_hits)
+  if (query$max > 0) {
+    tot_hits <- query$max
+    if (query$max < query$size) {
+      tot_hits_str <- paste0("first ", query$max, " of ", tot_hits)
+    } else {
+      tot_hits_str <- tot_hits
+    }
+  }
   message("Fetching ", tot_hits_str, " total documents...")
   if (tot_hits > 10000 && is.null(query$path))
     message("This is a large query. Beginning to fetch to memory, but consider aborting and using the 'path' argument with query_fetch() to the write results to disk.")
