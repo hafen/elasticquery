@@ -4,7 +4,12 @@
 \alias{filter_match}
 \title{Specify a match filter}
 \usage{
-filter_match(query, field, match)
+filter_match(
+  query,
+  field,
+  match,
+  bool = c("must", "filter", "must_not", "should")
+)
 }
 \arguments{
 \item{query}{a \code{\link[=query_agg]{query_agg()}} or \code{\link[=query_fetch]{query_fetch()}} object}
@@ -12,6 +17,8 @@ filter_match(query, field, match)
 \item{field}{field name (see \code{\link[=queryable_fields]{queryable_fields()}} for all possibilities)}
 
 \item{match}{a string to match}
+
+\item{bool}{one of "must", "filter", "must_not", "should" (see \href{https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html}{here})}
 }
 \description{
 Specify a match filter

@@ -4,7 +4,12 @@
 \alias{filter_regexp}
 \title{Specify a regexp filter}
 \usage{
-filter_regexp(query, field, regexp)
+filter_regexp(
+  query,
+  field,
+  regexp,
+  bool = c("must", "filter", "must_not", "should")
+)
 }
 \arguments{
 \item{query}{a \code{\link[=query_agg]{query_agg()}} or \code{\link[=query_fetch]{query_fetch()}} object}
@@ -12,6 +17,8 @@ filter_regexp(query, field, regexp)
 \item{field}{field name (see \code{\link[=queryable_fields]{queryable_fields()}} for all possibilities)}
 
 \item{regexp}{a regular expression string to match}
+
+\item{bool}{one of "must", "filter", "must_not", "should" (see \href{https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html}{here})}
 }
 \description{
 Specify a regexp filter

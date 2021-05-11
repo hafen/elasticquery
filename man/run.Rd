@@ -7,7 +7,7 @@
 run(query)
 }
 \arguments{
-\item{query}{a \code{\link[=query_agg]{query_agg()}} or \code{\link[=query_fetch]{query_fetch()}} object}
+\item{query}{a \code{\link[=query_agg]{query_agg()}}, \code{\link[=query_fetch]{query_fetch()}}, or \code{\link[=query_str]{query_str()}} object}
 }
 \description{
 Execute a query

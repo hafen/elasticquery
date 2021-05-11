@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">elasticquery</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.5</span>
       </span>
     </div>
 
@@ -453,6 +453,32 @@
 <span class="co">#&gt; 10 f:11:All UNICEF Categories           2020-03-16 00:00:00   196</span>
 <span class="co">#&gt; # … with 762 more rows</span></code></pre></div>
 </div>
+<div id="simple-query-string-filters" class="section level4">
+<h4 class="hasAnchor">
+<a href="#simple-query-string-filters" class="anchor"></a>Simple query string filters</h4>
+<p>You can add a simple <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html">query string filter</a> by using the function <code><a href="../reference/filter_sqs.html">filter_sqs()</a></code>. This allows you to specify field name or vector of field names to search, and then a query string to search in these fields.</p>
+<p>Below we are searching fields “fullText” and “title” for the specified search string.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, max <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_sqs.html">filter_sqs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"fullText"</span>, <span class="st">"title"</span><span class="op">)</span>, <span class="st">"((health | healthcare | \\\"health care\\\" | medical) + (specialist* | provider* | professional* | practitioner* | doctor* | worker* | personnel | staff)) | physician* | \\\"general practitioner\\\" | therapist*"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/select_fields.html">select_fields</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"fullText"</span>, <span class="st">"title"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; Fetching first 100 of 100 total documents...</span>
+<span class="co">#&gt; 100 documents fetched (100%)...</span></code></pre></div>
+</div>
+<div id="boolean-filter-operators" class="section level4">
+<h4 class="hasAnchor">
+<a href="#boolean-filter-operators" class="anchor"></a>Boolean filter operators</h4>
+<p>All of the <code>filter_*()</code> functions have a boolean parameter <code>bool</code> that allows you to specify the boolean logic for the filter. The supported options are described <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html">here</a>. The default is “must”, meaning that the specified filter must appear in the returned documents.</p>
+<p>Below, we are filtering on the field “tags”, saying that we want documents with tags “l:WPRO”, but no documents with tags “l:CoronavirusInfection”.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, max <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_terms.html">filter_terms</a></span><span class="op">(</span><span class="st">"tags"</span>, <span class="st">"l:WPRO"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_terms.html">filter_terms</a></span><span class="op">(</span><span class="st">"tags"</span>, <span class="st">"l:CoronavirusInfection"</span>, bool <span class="op">=</span> <span class="st">"must_not"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; Fetching first 100 of 100 total documents...</span>
+<span class="co">#&gt; 100 documents fetched (100%)...</span></code></pre></div>
+</div>
 </div>
 </div>
 <div id="fetch-queries" class="section level2">
@@ -466,7 +492,7 @@
 <p>One optional argument of note to this function is <code>path</code>, which specifies a directory to write docuents to as they are fetched. If this is not specified, results will be read into memory. If the result set looks like it will be very large, a warning is provided that encourages the user to provide a <code>path</code> and write to disk.</p>
 <p>If we intialize a fetch query with no refinements, it will returl all documents in the index.</p>
 <p>For example, with our example index which contains 10k documents:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>This will fetch all 10k documents and return them as a large list to <code>docs</code>.</p>
@@ -477,7 +503,7 @@
 <a href="#adding-filters-to-fetch-queries" class="anchor"></a>Adding Filters to Fetch Queries</h3>
 <p>It is probably more desirable for a fetch query to pinpoint records of interest rather than retrieve all documents. This can be done using filter queries as we specified earlier.</p>
 <p>For example, to fetch all documents matching the filtering criteria we specified in the final aggregation example:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_terms.html">filter_terms</a></span><span class="op">(</span><span class="st">"affectedCountriesIso"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"US"</span>, <span class="st">"CA"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -486,17 +512,29 @@
 <span class="co">#&gt; Fetching 288 total documents...</span>
 <span class="co">#&gt; 288 documents fetched (100%)...</span></code></pre></div>
 </div>
+<div id="checking-to-see-how-large-query-results-will-be" class="section level3">
+<h3 class="hasAnchor">
+<a href="#checking-to-see-how-large-query-results-will-be" class="anchor"></a>Checking to see how large query results will be</h3>
+<p>Sometimes we may wish to see how large a query is before executing it. To do this, we can replace <code><a href="../reference/run.html">run()</a></code> with <code><a href="../reference/n_docs.html">n_docs()</a></code>. To make query execution even faster, we can specify <code>max = 0</code> so that only no documents are fetched.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, max <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_terms.html">filter_terms</a></span><span class="op">(</span><span class="st">"affectedCountriesIso"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"US"</span>, <span class="st">"CA"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_match.html">filter_match</a></span><span class="op">(</span><span class="st">"fullText"</span>, <span class="st">"disease"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/n_docs.html">n_docs</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 288</span></code></pre></div>
+</div>
 <div id="fetching-a-subset-of-records" class="section level3">
 <h3 class="hasAnchor">
 <a href="#fetching-a-subset-of-records" class="anchor"></a>Fetching a subset of records</h3>
 <p>There is an argument <code>max</code> in <code><a href="../reference/query_fetch.html">query_fetch()</a></code> that can be used to specify that we just want to fetch the first <code>max</code> documents. This can be useful if we want to experiment with our query and the resulting data before doing a full fetch.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, max <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_terms.html">filter_terms</a></span><span class="op">(</span><span class="st">"affectedCountriesIso"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"US"</span>, <span class="st">"CA"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_match.html">filter_match</a></span><span class="op">(</span><span class="st">"fullText"</span>, <span class="st">"disease"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; Fetching first 10 of 288 total documents...</span>
+<span class="co">#&gt; Fetching first 10 of 10 total documents...</span>
 <span class="co">#&gt; 10 documents fetched (100%)...</span></code></pre></div>
 </div>
 <div id="fetching-to-disk" class="section level3">
@@ -505,7 +543,7 @@
 <p>In the previous fetch examples, the return object <code>docs</code> has been a list format of the document content of the query.</p>
 <p>In a many cases we may wish to do a bulk download of many articles. If we specify a <code>path</code> argument to <code><a href="../reference/query_fetch.html">query_fetch()</a></code>, the results will be written in batches to the specified directory.</p>
 <p>For example, to write our last query to disk, we specify a directory in our query initizilaztion. Also, note that to simulate scrolling, we specify each iteration of the query to retrieve 10 documents (instead of the default 10k documents) with the <code>size</code> argument. With this, we see that two files get written, one for each scroll.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">tf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempfile</a></span><span class="op">(</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">tf</span><span class="op">)</span>
 <span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, path <span class="op">=</span> <span class="va">tf</span>, size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -557,12 +595,12 @@
 <a href="#specifying-fields-to-sort-on" class="anchor"></a>Specifying fields to sort on</h3>
 <p>Another operation available only for fetch queries is <code><a href="../reference/sort_docs.html">sort_docs()</a></code>, which allows you to specify fields to sort by as part of the fetch.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, size <span class="op">=</span> <span class="fl">10</span>, max <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/sort_docs.html">sort_docs</a></span><span class="op">(</span><span class="st">"processedOnDate"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; Fetching first 25 of 8136 total documents...</span>
+<span class="co">#&gt; Fetching 25 total documents...</span>
 <span class="co">#&gt; 10 documents fetched (40%)...</span>
 <span class="co">#&gt; 20 documents fetched (80%)...</span>
 <span class="co">#&gt; 25 documents fetched (100%)...</span>
@@ -581,13 +619,39 @@
 <span class="co">#&gt; [21] "2020-03-13T07:34:08.6844120Z" "2020-03-13T07:35:05.6037369Z"</span>
 <span class="co">#&gt; [23] "2020-03-13T07:35:09.8630094Z" "2020-03-13T07:35:10.7938444Z"</span>
 <span class="co">#&gt; [25] "2020-03-13T07:37:01.3067962Z"</span></code></pre></div>
+<p>You can provide a vector of field names for nested sorting.</p>
+<p>You can also wrap fields with utility functions <code><a href="../reference/asc.html">asc()</a></code> and <code><a href="../reference/desc.html">desc()</a></code> to specify the sort order:</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, size <span class="op">=</span> <span class="fl">10</span>, max <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/sort_docs.html">sort_docs</a></span><span class="op">(</span><span class="fu"><a href="../reference/desc.html">desc</a></span><span class="op">(</span><span class="st">"processedOnDate"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+  <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; Fetching 25 total documents...</span>
+<span class="co">#&gt; 10 documents fetched (40%)...</span>
+<span class="co">#&gt; 20 documents fetched (80%)...</span>
+<span class="co">#&gt; 25 documents fetched (100%)...</span>
+
+<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="va">docs</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="va">`_source`</span><span class="op">$</span><span class="va">processedOnDate</span><span class="op">)</span>
+<span class="co">#&gt;  [1] "2020-03-18T06:48:04.0678061Z" "2020-03-18T06:48:01.2303682Z"</span>
+<span class="co">#&gt;  [3] "2020-03-18T06:47:12.4272729Z" "2020-03-18T06:47:06.5424375Z"</span>
+<span class="co">#&gt;  [5] "2020-03-18T06:47:01.1790261Z" "2020-03-18T06:47:00.6332482Z"</span>
+<span class="co">#&gt;  [7] "2020-03-18T06:46:04.3693800Z" "2020-03-18T06:46:04.0533870Z"</span>
+<span class="co">#&gt;  [9] "2020-03-18T06:46:03.3320970Z" "2020-03-18T06:46:02.3600512Z"</span>
+<span class="co">#&gt; [11] "2020-03-18T06:46:02.1100528Z" "2020-03-18T06:46:01.0043784Z"</span>
+<span class="co">#&gt; [13] "2020-03-18T06:45:05.6178085Z" "2020-03-18T06:45:05.1447041Z"</span>
+<span class="co">#&gt; [15] "2020-03-18T06:45:03.3038090Z" "2020-03-18T06:45:02.9738038Z"</span>
+<span class="co">#&gt; [17] "2020-03-18T06:45:01.7208323Z" "2020-03-18T06:45:00.7528565Z"</span>
+<span class="co">#&gt; [19] "2020-03-18T06:44:09.2082822Z" "2020-03-18T06:44:08.9183509Z"</span>
+<span class="co">#&gt; [21] "2020-03-18T06:44:04.7698113Z" "2020-03-18T06:44:04.2997752Z"</span>
+<span class="co">#&gt; [23] "2020-03-18T06:44:03.6822691Z" "2020-03-18T06:44:01.9492661Z"</span>
+<span class="co">#&gt; [25] "2020-03-18T06:44:01.4906573Z"</span></code></pre></div>
 </div>
 <div id="specifying-fields-to-return" class="section level3">
 <h3 class="hasAnchor">
 <a href="#specifying-fields-to-return" class="anchor"></a>Specifying fields to return</h3>
 <p>An operation available only for fetch queries, <code><a href="../reference/select_fields.html">select_fields()</a></code>, allows us to specify which fields should be returned for each document. This is useful of documents contain some fields that are very large and we don’t want to include them in our results.</p>
 <p>To see what values are acceptable for a selectable field:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/selectable_fields.html">selectable_fields</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span>
 <span class="co">#&gt; # A tibble: 45 x 2</span>
 <span class="co">#&gt;    field                type   </span>
@@ -604,12 +668,12 @@
 <span class="co">#&gt; 10 fullText             text   </span>
 <span class="co">#&gt; # … with 35 more rows</span></code></pre></div>
 <p>For example, to return just the fields “source.countryIso” and “locations”:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, size <span class="op">=</span> <span class="fl">10</span>, max <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/select_fields.html">select_fields</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"source.id"</span>, <span class="st">"triggers"</span>, <span class="st">"locations"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; Fetching first 25 of 8136 total documents...</span>
+<span class="co">#&gt; Fetching 25 total documents...</span>
 <span class="co">#&gt; 10 documents fetched (40%)...</span>
 <span class="co">#&gt; 20 documents fetched (80%)...</span>
 <span class="co">#&gt; 25 documents fetched (100%)...</span>
@@ -625,12 +689,7 @@
 <span class="co">#&gt;   ..$ :List of 2</span>
 <span class="co">#&gt;   ..$ :List of 2</span>
 <span class="co">#&gt;   ..$ :List of 2</span>
-<span class="co">#&gt;   ..$ :List of 2</span>
-
-<span class="va">to_data_frame</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="va">x</span>, <span class="kw">function</span><span class="op">(</span><span class="va">a</span><span class="op">)</span> <span class="va">a</span><span class="op">$</span><span class="va">`_source`</span><span class="op">)</span>
-  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/deprecated.html">as_data_frame</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">}</span></code></pre></div>
+<span class="co">#&gt;   ..$ :List of 2</span></code></pre></div>
 </div>
 </div>
 <div id="ad-hoc-queries" class="section level2">
@@ -638,19 +697,19 @@
 <a href="#ad-hoc-queries" class="anchor"></a>Ad hoc Queries</h2>
 <p>The interface provided by <code><a href="../reference/query_fetch.html">query_fetch()</a></code>, <code><a href="../reference/query_agg.html">query_agg()</a></code>, and the accompanying filter and sort functions is meant to enable clean and precise definition of Elasticsearch queries, hiding all the messy details of scrolling, aggregation bucketing, query JSON specification, execution, etc. There may be times when this interface does not quite provide enough flexibility. In this scenario, a function, <code><a href="../reference/query_str.html">query_str()</a></code>, has been created that allows you to provide a string specifying an Elasticsearch query that gets executed.</p>
 <p>For example, suppose we would like to fetch all documents retrieved after 2020-03-10. As we have seen before, we can do this with the following:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">docs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, size <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>Suppose we want to run a query similar to this, but we need to modify the query a bit in a way that isn’t available through the interface provided in this package. Let’s first look at what the resulting query string is:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/query_fetch.html">query_fetch</a></span><span class="op">(</span><span class="va">con</span>, size <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/filter_range.html">filter_range</a></span><span class="op">(</span><span class="st">"processedOnDate"</span>, from <span class="op">=</span> <span class="st">"2020-03-10"</span><span class="op">)</span>
 <span class="co">#&gt; {</span>
 <span class="co">#&gt;   "size": 1000,</span>
 <span class="co">#&gt;   "query": {</span>
 <span class="co">#&gt;     "bool": {</span>
-<span class="co">#&gt;       "filter": [</span>
+<span class="co">#&gt;       "must": [</span>
 <span class="co">#&gt;         {</span>
 <span class="co">#&gt;           "range": {</span>
 <span class="co">#&gt;             "processedOnDate": {</span>
@@ -663,7 +722,7 @@
 <span class="co">#&gt;   }</span>
 <span class="co">#&gt; }</span></code></pre></div>
 <p>For illustration purposes, we will take this string and run it directly without modification. To run this query string, we can do the following:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">str</span> <span class="op">&lt;-</span> <span class="st">'{
   "size": 1000,
   "query": {
@@ -684,10 +743,10 @@
 <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_str.html">query_str</a></span><span class="op">(</span><span class="va">con</span>, str <span class="op">=</span> <span class="va">str</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>Here we simply specified to run the query specified by this string. The structure of the output looks like this:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">res</span>, <span class="fl">2</span><span class="op">)</span>
 <span class="co">#&gt; List of 4</span>
-<span class="co">#&gt;  $ took     : int 38</span>
+<span class="co">#&gt;  $ took     : int 43</span>
 <span class="co">#&gt;  $ timed_out: logi FALSE</span>
 <span class="co">#&gt;  $ _shards  :List of 4</span>
 <span class="co">#&gt;   ..$ total     : int 1</span>
@@ -701,7 +760,7 @@
 <p>Note that this is the raw output provided by Elasticsearch and not the more convenient list output provided by <code><a href="../reference/query_fetch.html">query_fetch()</a></code>. Also note that it only pulled 1000 documents when we know there are more results in this query. These limitations occur because <code><a href="../reference/query_str.html">query_str()</a></code> does not know what kind of query specificaiton it is going to receive, and therefore does not know how to best process the output.</p>
 <p>To fully take advantage of the fetch and aggregation conveniences provided by this package, an additional <code>type</code> parameter is available to <code><a href="../reference/query_str.html">query_str()</a></code> which by default is “unkown”, but can also be set to “fetch” or “agg”.</p>
 <p>With our current example, if we add <code>type = "fetch"</code> to our call to <code><a href="../reference/query_str.html">query_str()</a></code>, the execution now knows to handle the query as a fetch query and will take care of scrolling, etc. to fetch all of the documents.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_str.html">query_str</a></span><span class="op">(</span><span class="va">con</span>, str <span class="op">=</span> <span class="va">str</span>, type <span class="op">=</span> <span class="st">"fetch"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">#&gt; Fetching 8136 total documents...</span>
@@ -719,7 +778,7 @@
 <span class="co">#&gt; [1] 8136</span></code></pre></div>
 <p>While this example wasn’t very imaginative, suppose there is more complex filter logic you want to apply. A typical use case might be to use <code><a href="../reference/query_fetch.html">query_fetch()</a></code> and associated filter/sort functions to get you started, modify the query string as needed, and pass that to <code><a href="../reference/query_str.html">query_str()</a></code>. Note, however, that there is less protection in this scenario from errors in the query specification, so you can expect to see more error messages which will result in the need to debug your query string.</p>
 <p>Similarly, we can apply <code><a href="../reference/query_str.html">query_str()</a></code> to aggregation-type queries. Let’s take the following example:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/query_agg.html">query_agg</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/agg_by_field.html">agg_by_field</a></span><span class="op">(</span><span class="st">"tags"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/agg_by_field.html">agg_by_field</a></span><span class="op">(</span><span class="st">"affectedCountriesIso"</span><span class="op">)</span>
@@ -750,7 +809,7 @@
 <span class="co">#&gt;   }</span>
 <span class="co">#&gt; }</span></code></pre></div>
 <p>We can run this same query using <code><a href="../reference/query_str.html">query_str()</a></code> as follows:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">str</span> <span class="op">&lt;-</span> <span class="st">'{
   "size": 0,
   "aggs": {
@@ -802,7 +861,7 @@
 <span class="co">#&gt;   .. ..$ buckets  :List of 1000</span></code></pre></div>
 <p>As before, we see that <code><a href="../reference/query_str.html">query_str()</a></code> is “dumb” in that it doesn’t know we are doing an aggregation and doesn’t know to do the smart iteration to fetch the rest of the aggregation buckets as well as putting the result into a data frame.</p>
 <p>To make <code><a href="../reference/query_str.html">query_str()</a></code> “smart”, we can add <code>type = "agg"</code>:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_str.html">query_str</a></span><span class="op">(</span><span class="va">con</span>, str <span class="op">=</span> <span class="va">str</span>, type <span class="op">=</span> <span class="st">"agg"</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu"><a href="../reference/run.html">run</a></span><span class="op">(</span><span class="op">)</span>
 

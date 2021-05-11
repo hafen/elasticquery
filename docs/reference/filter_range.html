@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">elasticquery</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.5</span>
       </span>
     </div>
 
@@ -117,7 +117,13 @@
     <p>Specify a range filter</p>
     </div>
 
-    <pre class="usage"><span class='fu'>filter_range</span><span class='op'>(</span><span class='va'>query</span>, <span class='va'>field</span>, from <span class='op'>=</span> <span class='cn'>NULL</span>, to <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>filter_range</span><span class='op'>(</span>
+  <span class='va'>query</span>,
+  <span class='va'>field</span>,
+  from <span class='op'>=</span> <span class='cn'>NULL</span>,
+  to <span class='op'>=</span> <span class='cn'>NULL</span>,
+  bool <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"must"</span>, <span class='st'>"filter"</span>, <span class='st'>"must_not"</span>, <span class='st'>"should"</span><span class='op'>)</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -137,6 +143,10 @@
     <tr>
       <th>to</th>
       <td><p>the upper value of the range</p></td>
+    </tr>
+    <tr>
+      <th>bool</th>
+      <td><p>one of "must", "filter", "must_not", "should" (see <a href='https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html'>here</a>)</p></td>
     </tr>
     </table>
 

@@ -248,6 +248,32 @@ query_agg(con) %>%
   run()
 ```
 
+#### Simple query string filters
+
+You can add a simple [query string filter](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html) by using the function `filter_sqs()`. This allows you to specify field name or vector of field names to search, and then a query string to search in these fields.
+
+Below we are searching fields "fullText" and "title" for the specified search string.
+
+```{r}
+docs <- query_fetch(con, max = 100) %>%
+  filter_sqs(c("fullText", "title"), "((health | healthcare | \\\"health care\\\" | medical) + (specialist* | provider* | professional* | practitioner* | doctor* | worker* | personnel | staff)) | physician* | \\\"general practitioner\\\" | therapist*") %>%
+  select_fields(c("fullText", "title")) %>%
+  run()
+```
+
+#### Boolean filter operators
+
+All of the `filter_*()` functions have a boolean parameter `bool` that allows you to specify the boolean logic for the filter. The supported options are described [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html). The default is "must", meaning that the specified filter must appear in the returned documents.
+
+Below, we are filtering on the field "tags", saying that we want documents with tags "l:WPRO", but no documents with tags "l:CoronavirusInfection".
+
+```{r}
+docs <- query_fetch(con, max = 100) %>%
+  filter_terms("tags", "l:WPRO") %>%
+  filter_terms("tags", "l:CoronavirusInfection", bool = "must_not") %>%
+  run()
+```
+
 ## Fetch Queries
 
 Fetch queries simply retrieve documents based on filtering criteria. All of the filtering functions specified above apply to these queries.
@@ -283,6 +309,18 @@ docs <- query_fetch(con) %>%
   filter_terms("affectedCountriesIso", c("US", "CA")) %>%
   filter_match("fullText", "disease") %>%
   run()
+```
+
+### Checking to see how large query results will be
+
+Sometimes we may wish to see how large a query is before executing it. To do this, we can replace `run()` with `n_docs()`. To make query execution even faster, we can specify `max = 0` so that only no documents are fetched.
+
+```{r}
+query_fetch(con, max = 0) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  filter_terms("affectedCountriesIso", c("US", "CA")) %>%
+  filter_match("fullText", "disease") %>%
+  n_docs()
 ```
 
 ### Fetching a subset of records
@@ -332,6 +370,18 @@ docs <- query_fetch(con, size = 10, max = 25) %>%
 sapply(docs, function(x) x$`_source`$processedOnDate)
 ```
 
+You can provide a vector of field names for nested sorting.
+
+You can also wrap fields with utility functions `asc()` and `desc()` to specify the sort order:
+
+```{r}
+docs <- query_fetch(con, size = 10, max = 25) %>%
+  filter_range("processedOnDate", from = "2020-03-10") %>%
+  sort_docs(desc("processedOnDate")) %>%
+  run()
+
+sapply(docs, function(x) x$`_source`$processedOnDate)
+```
 
 ### Specifying fields to return
 
@@ -352,11 +402,6 @@ docs <- query_fetch(con, size = 10, max = 25) %>%
   run()
 
 str(docs[[1]]$`_source`, 2)
-
-to_data_frame <- function(x) {
-  tmp <- lapply(x, function(a) a$`_source`)
-  tibble::as_data_frame()
-}
 ```
 
 ## Ad hoc Queries

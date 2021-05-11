@@ -4,7 +4,13 @@
 \alias{filter_range}
 \title{Specify a range filter}
 \usage{
-filter_range(query, field, from = NULL, to = NULL)
+filter_range(
+  query,
+  field,
+  from = NULL,
+  to = NULL,
+  bool = c("must", "filter", "must_not", "should")
+)
 }
 \arguments{
 \item{query}{a \code{\link[=query_agg]{query_agg()}} or \code{\link[=query_fetch]{query_fetch()}} object}
@@ -14,6 +20,8 @@ filter_range(query, field, from = NULL, to = NULL)
 \item{from}{the lower value of the range}
 
 \item{to}{the upper value of the range}
+
+\item{bool}{one of "must", "filter", "must_not", "should" (see \href{https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html}{here})}
 }
 \description{
 Specify a range filter

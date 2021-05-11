@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">elasticquery</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.5</span>
       </span>
     </div>
 
@@ -124,7 +124,8 @@
   size <span class='op'>=</span> <span class='fl'>10000</span>,
   time_scroll <span class='op'>=</span> <span class='st'>"5m"</span>,
   max <span class='op'>=</span> <span class='fl'>0</span>,
-  format <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"list"</span>, <span class='st'>"json"</span><span class='op'>)</span>
+  format <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"list"</span>, <span class='st'>"json"</span><span class='op'>)</span>,
+  check_fields <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -157,6 +158,11 @@
     <tr>
       <th>format</th>
       <td><p>format of returned output - either "list" or "json"</p></td>
+    </tr>
+    <tr>
+      <th>check_fields</th>
+      <td><p>should field names be checked when the query is
+augmented?</p></td>
     </tr>
     </table>
 
