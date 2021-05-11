@@ -55,3 +55,20 @@ get_index <- function(con, index) {
       "Or a per-query index can be specified in query_agg() or query_fetch()")
   index
 }
+
+
+#' Get the total number of documents that match query parameters
+#' @param query a [query_agg()], [query_fetch()], or [query_str()] object
+#' @details Note: the number returned is not necessarily the same number of
+#' documents that a fetch query will return. That depends on the value set for
+#' max.
+#' @export
+n_docs <- function(query) {
+  check_class(query, c("query_agg", "query_fetch", "query_str"), "n_docs")
+  query$size <- 1
+  qry <- get_query(query)  
+  r <- elastic::Search(query$con$con, index = query$index,
+    time_scroll = query$time_scroll, body = qry)
+
+  r$hits$total$value
+}
